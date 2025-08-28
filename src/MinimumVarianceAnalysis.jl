@@ -15,13 +15,13 @@ include("utils.jl")
 """
     mva(V, B=V; dim=nothing, kwargs...)
 
-Rotate a timeseries `V` into the LMN coordinates based on the reference field `B` along the `dim` dimension (time).
+Transform a timeseries `V` into the LMN coordinate system based on the minimum variance analysis of reference field `B` along the `dim` dimension (time).
 
-See also: [`mva_eigen`](@ref), [`rotate`](@ref)
+See also: [`mva_eigen`](@ref), [`transform`](@ref)
 """
 function mva(V, B = V; dim = nothing, kwargs...)
     E = mva_eigen(B; dim, kwargs...)
-    return rotate(V, E; dim)
+    return transform(V, E; dim)
 end
 
 @inline function sorteigen(F; sortby = abs, rev = true)
