@@ -1,0 +1,7 @@
+name = "MinimumVarianceAnalysis"
+uuid = "5a74c7d3-1edb-47ee-a7ac-bdb4b3eeab9d"
+authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.10"
