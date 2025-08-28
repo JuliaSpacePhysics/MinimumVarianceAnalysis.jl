@@ -12,9 +12,17 @@ end
 
 _dimnum(x, query = nothing) = 1
 
-function rotate(A, mat::AbstractMatrix; dim = nothing, query = nothing)
+"""
+    transform(A, mat::AbstractMatrix; dim=nothing, query=nothing)
+
+Transform `A` into a new coordinate system using transformation matrix `mat` along the `dim` dimension (time).
+"""
+function transform(A, mat::AbstractMatrix; dim = nothing, query = nothing)
     dim = @something dim _dimnum(A, query)
     return dim == 1 ? A * mat : mat' * A
 end
 
-rotate(A, mat::Eigen; kw...) = rotate(A, mat.vectors; kw...)
+transform(A, mat::Eigen; kw...) = transform(A, mat.vectors; kw...)
+
+# Deprecated alias for backwards compatibility
+rotate(A, mat; kw...) = transform(A, mat; kw...)
