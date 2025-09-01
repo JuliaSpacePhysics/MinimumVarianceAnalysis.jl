@@ -11,6 +11,13 @@ $$
 
 See [SPEDAS](https://juliaspacephysics.github.io/SPEDAS.jl/dev/explanations/coords/) for more details. See [SPEDAS validation](https://juliaspacephysics.github.io/SPEDAS.jl/dev/validation/pyspedas/#Minimum-variance-analysis) for comparison with a Python implementation (pyspedas).
 
+## Installation
+
+```julia
+using Pkg
+Pkg.add("MinimumVarianceAnalysis")
+```
+
 ## Reference
 
 - [Sonnerup, B. U. Ö., & Scheible, M. (1998). Minimum and maximum variance analysis. ISSI Scientific Reports Series, 1, 185–220.](https://ui.adsabs.harvard.edu/abs/1998ISSIR...1..185S/abstract)
@@ -20,3 +27,7 @@ See [SPEDAS](https://juliaspacephysics.github.io/SPEDAS.jl/dev/explanations/coor
 - [ ] Minimum Variance Analysis on Mass Flux (MVAρv)
 - [ ] Maximum Variance Analysis on Electric Field (MVAE)
 - [ ] Application to 2-D Structures
+
+## Notes
+
+- Anisotropic fluctuations have been shown to lead to larger errors in normal determinations.
