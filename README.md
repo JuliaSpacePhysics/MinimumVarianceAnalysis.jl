@@ -1,5 +1,9 @@
 # MinimumVarianceAnalysis
 
+[![DOI](https://zenodo.org/badge/1046063112.svg)](https://doi.org/10.5281/zenodo.18635364)
+[![version](https://juliahub.com/docs/General/MinimumVarianceAnalysis/stable/version.svg)](https://juliahub.com/ui/Packages/General/MinimumVarianceAnalysis)
+
+
 [![Build Status](https://github.com/JuliaSpacePhysics/MinimumVarianceAnalysis.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/MinimumVarianceAnalysis.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/JuliaSpacePhysics/MinimumVarianceAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/MinimumVarianceAnalysis.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
@@ -20,10 +24,13 @@ See [SPEDAS](https://juliaspacephysics.github.io/SPEDAS.jl/dev/explanations/coor
 
 - [Sonnerup, B. U. Ö., & Scheible, M. (1998). Minimum and maximum variance analysis. ISSI Scientific Reports Series, 1, 185–220.](https://ui.adsabs.harvard.edu/abs/1998ISSIR...1..185S/abstract)
 
-## Roadmap
+## Features and Roadmap
 
-- [ ] Minimum Variance Analysis on Mass Flux (MVAρv)
+- [x] Maximum Variance Analysis on Magnetic Field (MVAB)
+    - [ ] Constraint $〈B₃〉 = 0$
 - [x] Maximum Variance Analysis on Electric Field (MVAE)
+    - [ ] Transformation to/from moving frame of reference
+- [ ] Minimum Variance Analysis on Mass Flux (MVAρv)
 - [ ] Application to 2-D Structures
 
 ## Notes

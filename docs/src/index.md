@@ -1,6 +1,12 @@
 # MinimumVarianceAnalysis
 
+[![DOI](https://zenodo.org/badge/1046063112.svg)](https://doi.org/10.5281/zenodo.18635364)
+[![version](https://juliahub.com/docs/General/MinimumVarianceAnalysis/stable/version.svg)](https://juliahub.com/ui/Packages/General/MinimumVarianceAnalysis)
+
 A Julia package for minimum or maximum variance analysis (MVA).
+
+- [x] Maximum Variance Analysis on Magnetic Field (MVAB)
+- [x] Maximum Variance Analysis on Electric Field (MVAE)
 
 ## API Reference
 
