@@ -5,23 +5,23 @@ module MinimumVarianceAnalysis
 
 using LinearAlgebra
 using StaticArrays
-using Unitful: Quantity, ustrip, unit
 export mva, mva_eigen, check_mva_eigen
-export mvae, mvae_eigen, check_mvae_eigen, convection_efield
+export convection_efield
 
 const SV3 = SVector{3}
 
 include("utils.jl")
+include("unitful.jl")
 
 """
-    mva(V, B=V; dim=nothing, kwargs...)
+    mva(V, F=V; dim=nothing, kwargs...)
 
-Transform a timeseries `V` into the LMN coordinate system based on the minimum variance analysis of reference field `B` along the `dim` dimension (time).
+Transform a timeseries `V` into the LMN coordinate system based on the minimum/maximum variance analysis of reference field `F` along the `dim` dimension (time).
 
 See also: [`mva_eigen`](@ref), [`transform`](@ref)
 """
-function mva(V, B = V; dim = nothing, kwargs...)
-    E = mva_eigen(B; dim, kwargs...)
+function mva(V, F = V; dim = nothing, kwargs...)
+    E = mva_eigen(F; dim, kwargs...)
     return transform(V, E; dim)
 end
 
@@ -39,45 +39,48 @@ function _mva_eigen(B, ::Val{N}; sort = (;)) where {N}
 end
 
 """
-    mva_eigen(B::AbstractMatrix; dim = nothing, sort=(;), check=false) -> F::Eigen
+    mva_eigen(x::AbstractMatrix; dim = nothing, sort=(;), check=false) -> F::Eigen
 
-Perform minimum variance analysis for `B` (which varies along the `dim` dimension).
-    
-Return `Eigen` factorization object `F` which contains the eigenvalues in `F.values` and the eigenvectors in the columns of the matrix `F.vectors`.
+Perform minimum variance analysis of the magnetic field `B` or maximum variance analysis of the electric field `E` when `field=:E`.
+
+`x` varies along the `dim` dimension.
+
+Return `Eigen` factorization object `F` which contains the eigenvalues in `F.values` and the eigenvectors in the columns of the matrix `F.vectors`. The `k`th eigenvector can be obtained from the slice `F.vectors[:, k]`.
 
 Set `check=true` to check the reliability of the result.
 
-The `k`th eigenvector can be obtained from the slice `F.vectors[:, k]`.
+## Notes
+
+For a one-dimensional current layer, the tangential electric field components are approximately constant across the boundary, while the normal component exhibits the largest variation. Therefore, the eigenvector corresponding to the **maximum eigenvalue** ``λ_1`` (first column of `F.vectors`) gives an estimate of the boundary normal direction.
 """
-function mva_eigen(B; dim = nothing, sort = (;), check = false)
+function mva_eigen(B; dim = nothing, sort = (;), check = false, field = :B)
     dim = something(dim, 1)
     in = dim == 1 ? B : B'
     N = size(in, 2)
     F = _mva_eigen(in, Val(N); sort)
-    check && check_mva_eigen(F)
+    check && check_mva_eigen(F; field)
     return F
 end
 
-function mva_eigen(B::AbstractMatrix{Q}; kwargs...) where {Q <: Quantity}
-    F = mva_eigen(ustrip(B); kwargs...)
-    return Eigen(F.values * unit(Q)^2, F.vectors)
-end
-
-
 """
-    check_mva_eigen(F; r=5, verbose=false)
+    check_mva_eigen(F; r0=5, verbose=false, field = :B)
 
 Check the quality of the MVA result.
 
-If λ₁ ≥ λ₂ ≥ λ₃ are 3 eigenvalues of the constructed matrix M, then a good
-indicator of nice fitting LMN coordinate system should have ``abs(λ₂ / λ₃) > r``.
+If λ₁ ≥ λ₂ ≥ λ₃ are 3 eigenvalues of the constructed matrix M. For MVAB, a good indicator of nice results should have ``abs(λ₂ / λ₃) > r0`` (default ``r0 = 5``).
+
+For MVAE, a reliable normal direction requires the maximum eigenvalue ``λ₁`` to be well-separated from the intermediate eigenvalue ``λ₂``. The ratio ``|λ₁ / λ₂| > r0`` is used as a quality indicator.
 """
-function check_mva_eigen(F; r0 = 5, verbose = false)
-    r = abs(F.values[2] / F.values[3])
+function check_mva_eigen(F; r0 = 5, verbose = false, field = :B)
+    r = field == :E ? abs(F.values[1] / F.values[2]) : abs(F.values[2] / F.values[3])
     flag = r > r0
     verbose && begin
         println(F.vectors)
-        println("Ratio of intermediate variance to minimum variance = ", r)
+        if field == :E
+            println("Ratio of maximum variance to intermediate variance = ", r)
+        else
+            println("Ratio of intermediate variance to minimum variance = ", r)
+        end
         flag && @info "Seems to be a proper MVA attempt!"
     end
     flag || @warn "Take the MVA result with a grain of salt!"
@@ -105,27 +108,7 @@ function Δφij(λᵢ, λⱼ, λ₃, M)
     return sqrt((λ₃ / (M - 1)) * (λᵢ + λⱼ - λ₃) / (λᵢ - λⱼ)^2)
 end
 
-"""
-Calculate the composite statistical error estimate for ⟨B·x₃⟩:
-|Δ⟨B·x₃⟩| = √(λ₃/(M-1) + (Δφ₃₂⟨B⟩·x₂)² + (Δφ₃₁⟨B⟩·x₁)²)
-
-Parameters:
-
-  - λ₁, λ₂, λ₃: eigenvalues in descending order
-  - M: number of samples
-  - B: mean magnetic field vector
-  - x₁, x₂, x₃: eigenvectors
-"""
-function B_x3_error(λ₁, λ₂, λ₃, M, B, x₁, x₂, x₃)
-    Δφ₃₂ = Δφij(λ₃, λ₂, λ₃, M)
-    Δφ₃₁ = Δφij(λ₃, λ₁, λ₃, M)
-    B_x₂ = dot(B, x₂)
-    B_x₁ = dot(B, x₁)
-    return sqrt(λ₃ / (M - 1) + (Δφ₃₂ * B_x₂)^2 + (Δφ₃₁ * B_x₁)^2)
-end
-
-B_x3_error(F::Eigen, M, B) = B_x3_error(F.values..., M, B, eachcol(F.vectors)...)
-
+include("mvab.jl")
 include("mvae.jl")
 include("workload.jl")
 
