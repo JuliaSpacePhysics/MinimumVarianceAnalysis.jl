@@ -7,6 +7,7 @@ using LinearAlgebra
 using StaticArrays
 using Unitful: Quantity, ustrip, unit
 export mva, mva_eigen, check_mva_eigen
+export mvae, mvae_eigen, check_mvae_eigen, convection_efield
 
 const SV3 = SVector{3}
 
@@ -125,6 +126,7 @@ end
 
 B_x3_error(F::Eigen, M, B) = B_x3_error(F.values..., M, B, eachcol(F.vectors)...)
 
+include("mvae.jl")
 include("workload.jl")
 
 end

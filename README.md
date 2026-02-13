@@ -23,7 +23,7 @@ See [SPEDAS](https://juliaspacephysics.github.io/SPEDAS.jl/dev/explanations/coor
 ## Roadmap
 
 - [ ] Minimum Variance Analysis on Mass Flux (MVAρv)
-- [ ] Maximum Variance Analysis on Electric Field (MVAE)
+- [x] Maximum Variance Analysis on Electric Field (MVAE)
 - [ ] Application to 2-D Structures
 
 ## Notes

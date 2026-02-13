@@ -5,5 +5,7 @@ using Unitful: nT
     B = rand(10, 3) .* nT
     @compile_workload begin
         mva(B)
+        mvae(B)
+        convection_efield(rand(10, 3), rand(10, 3))
     end
 end
