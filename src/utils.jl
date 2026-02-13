@@ -26,3 +26,13 @@ transform(A, mat::Eigen; kw...) = transform(A, mat.vectors; kw...)
 
 # Deprecated alias for backwards compatibility
 rotate(A, mat; kw...) = transform(A, mat; kw...)
+
+"""
+    normal(F::Eigen; field=:B)
+
+Return the boundary normal eigenvector from an MVA result.
+
+- `field=:B` (MVAB): minimum variance direction (last eigenvector)
+- `field=:E` (MVAE): maximum variance direction (first eigenvector)
+"""
+@views normal(F::Eigen; field = :B) = field == :E ? F.vectors[:, 1] : F.vectors[:, end]
