@@ -1,3 +1,5 @@
 [deps]
+Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 MinimumVarianceAnalysis = "5a74c7d3-1edb-47ee-a7ac-bdb4b3eeab9d"
+PySPEDAS = "668d2cef-03a7-4c36-a521-7d1c6ddc8846"
