@@ -1,6 +1,11 @@
 # References:
 # - https://github.com/henry2004y/VisAnaJulia/blob/master/src/MVA.jl
 # - https://pyspedas.readthedocs.io/en/latest/coords.html#pyspedas.minvar
+"""
+Estimate the direction normal ``𝐧̂`` to a one-dimensional structure using minimum or maximum variance analysis (MVA).
+
+Main Functions: [`mva`](@ref), [`mva_eigen`](@ref), [`normal`](@ref)
+"""
 module MinimumVarianceAnalysis
 
 using LinearAlgebra
@@ -67,9 +72,9 @@ end
 
 Check the quality of the MVA result.
 
-If λ₁ ≥ λ₂ ≥ λ₃ are 3 eigenvalues of the constructed matrix M. For MVAB, a good indicator of nice results should have ``abs(λ₂ / λ₃) > r0`` (default ``r0 = 5``).
+If λ₁ ≥ λ₂ ≥ λ₃ are 3 eigenvalues of the constructed matrix M. For MVAB, a good indicator of nice results should have ``|λ₂ / λ₃| > r₀`` (default ``r₀ = 5``).
 
-For MVAE, a reliable normal direction requires the maximum eigenvalue ``λ₁`` to be well-separated from the intermediate eigenvalue ``λ₂``. The ratio ``|λ₁ / λ₂| > r0`` is used as a quality indicator.
+For MVAE, a reliable normal direction requires the maximum eigenvalue ``λ₁`` to be well-separated from the intermediate eigenvalue ``λ₂``. The ratio ``|λ₁ / λ₂| > r₀`` is used as a quality indicator.
 """
 function check_mva_eigen(F; r0 = 5, verbose = false, field = :B)
     r = field == :E ? abs(F.values[1] / F.values[2]) : abs(F.values[2] / F.values[3])

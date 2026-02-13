@@ -5,6 +5,10 @@
 
 A Julia package for minimum or maximum variance analysis (MVA).
 
+```@docs
+MinimumVarianceAnalysis
+```
+
 - [x] Maximum Variance Analysis on Magnetic Field (MVAB)
 - [x] Maximum Variance Analysis on Electric Field (MVAE)
 
