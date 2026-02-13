@@ -14,4 +14,5 @@ Error estimates for MVA:
 ```@docs; canonical=false
 MinimumVarianceAnalysis.Δφij
 MinimumVarianceAnalysis.B_x3_error
+MinimumVarianceAnalysis.E_x1_error
 ```
