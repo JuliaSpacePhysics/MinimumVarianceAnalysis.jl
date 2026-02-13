@@ -1,7 +1,7 @@
 name = "MinimumVarianceAnalysis"
 uuid = "5a74c7d3-1edb-47ee-a7ac-bdb4b3eeab9d"
+version = "0.1.1"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
-version = "0.1.0"
 
 [workspace]
 projects = ["docs", "test"]
@@ -19,9 +19,9 @@ DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 MVADimensionalDataExt = "DimensionalData"
 
 [compat]
-julia = "1.10"
 DimensionalData = "0.29"
 LinearAlgebra = "1"
 PrecompileTools = "1"
 StaticArrays = "1"
 Unitful = "1"
+julia = "1.10"
