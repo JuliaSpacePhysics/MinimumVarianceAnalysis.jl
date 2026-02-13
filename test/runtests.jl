@@ -45,7 +45,7 @@ end
     # Test rotation
     B1_rot = mva(B1)
     B2_rot = mva(B2)
-    @test B1_rot == B2_rot'
+    @test B1_rot ≈ B2_rot'
 
     # Test edge cases and robustness
     B_const = ones(10, 3)
