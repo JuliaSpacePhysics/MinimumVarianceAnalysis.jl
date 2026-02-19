@@ -19,7 +19,7 @@ DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 MVADimensionalDataExt = "DimensionalData"
 
 [compat]
-DimensionalData = "0.29"
+DimensionalData = "0.29, 0.30"
 LinearAlgebra = "1"
 PrecompileTools = "1"
 StaticArrays = "1"
