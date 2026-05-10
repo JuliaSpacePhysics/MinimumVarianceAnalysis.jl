@@ -10,15 +10,15 @@ is_right_handed(v1, v2, v3) = cross3(v1, v2) ⋅ v3 > 0
     return is_right_handed(v1, v2, v3)
 end
 
-_dimnum(x, query = nothing) = 1
+_dimnum(x, dim = nothing) = @something dim 1
 
 """
-    transform(A, mat::AbstractMatrix; dim=nothing, query=nothing)
+    transform(A, mat::AbstractMatrix; dim=nothing)
 
 Transform `A` into a new coordinate system using transformation matrix `mat` along the `dim` dimension (time).
 """
-function transform(A, mat::AbstractMatrix; dim = nothing, query = nothing)
-    dim = @something dim _dimnum(A, query)
+function transform(A, mat::AbstractMatrix; dim = nothing)
+    dim = _dimnum(A, dim)
     return dim == 1 ? A * mat : mat' * A
 end
 

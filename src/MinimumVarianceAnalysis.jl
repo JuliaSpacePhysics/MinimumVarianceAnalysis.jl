@@ -58,7 +58,7 @@ Set `check=true` to check the reliability of the result.
 For a one-dimensional current layer, the tangential electric field components are approximately constant across the boundary, while the normal component exhibits the largest variation. Therefore, the eigenvector corresponding to the **maximum eigenvalue** ``λ_1`` (first column of `F.vectors`) gives an estimate of the boundary normal direction.
 """
 function mva_eigen(B; dim = nothing, sort = (;), check = false, field = :B)
-    dim = something(dim, 1)
+    dim = _dimnum(B, dim)
     in = dim == 1 ? B : B'
     N = size(in, 2)
     F = _mva_eigen(in, Val(N); sort)
