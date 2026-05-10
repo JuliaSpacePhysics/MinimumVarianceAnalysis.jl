@@ -1,6 +1,8 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
+FlexUnits = "76e01b6b-c995-4ce6-8559-91e72a3d4e95"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MinimumVarianceAnalysis = "5a74c7d3-1edb-47ee-a7ac-bdb4b3eeab9d"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
