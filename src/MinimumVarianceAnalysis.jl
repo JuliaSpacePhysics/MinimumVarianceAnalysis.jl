@@ -8,8 +8,8 @@ Main Functions: [`mva`](@ref), [`mva_eigen`](@ref), [`normal`](@ref)
 """
 module MinimumVarianceAnalysis
 
-using LinearAlgebra
-using StaticArrays
+using LinearAlgebra: Eigen, eigen, dot, cross, ⋅
+using StaticArrays: SMatrix, SVector
 export mva, mva_eigen, check_mva_eigen
 export convection_efield
 
