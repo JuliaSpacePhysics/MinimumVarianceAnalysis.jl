@@ -16,7 +16,6 @@ export convection_efield
 const SV3 = SVector{3}
 
 include("utils.jl")
-include("unitful.jl")
 
 """
     mva(V, F=V; dim=nothing, kwargs...)
@@ -65,6 +64,18 @@ function mva_eigen(B; dim = nothing, sort = (;), check = false, field = :B)
     F = _mva_eigen(in, Val(N); sort)
     check && check_mva_eigen(F; field)
     return F
+end
+
+function _field(dimension, electric_dimension, magnetic_dimension)
+    dimension == electric_dimension && return :E
+    dimension == magnetic_dimension && return :B
+    return nothing
+end
+
+function _quantity_mva_eigen(B, scale, raw_values, infer_field_dimension; field = nothing, kwargs...)
+    field = @something field infer_field_dimension(scale) :B
+    F = mva_eigen(raw_values(B); field, kwargs...)
+    return Eigen(F.values .* scale^2, F.vectors)
 end
 
 """
