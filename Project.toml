@@ -1,6 +1,6 @@
 name = "MinimumVarianceAnalysis"
 uuid = "5a74c7d3-1edb-47ee-a7ac-bdb4b3eeab9d"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Beforerr <zzj956959688@gmail.com> and contributors"]
 
 [workspace]
