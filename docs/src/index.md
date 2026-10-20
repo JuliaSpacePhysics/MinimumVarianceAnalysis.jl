@@ -5,26 +5,17 @@
 
 A Julia package for minimum or maximum variance analysis (MVA).
 
-```@docs
-MinimumVarianceAnalysis
-```
-
-- [x] Maximum Variance Analysis on Magnetic Field (MVAB)
-- [x] Maximum Variance Analysis on Electric Field (MVAE)
-
 ## API Reference
 
 ```@autodocs
 Modules = [MinimumVarianceAnalysis]
 ```
 
-
 Error estimates for MVA:
 
 ```@docs; canonical=false
 MinimumVarianceAnalysis.Δφij
-MinimumVarianceAnalysis.B_x3_error
-MinimumVarianceAnalysis.E_x1_error
+MinimumVarianceAnalysis.normal_component_error
 ```
 
 ## Validation with PySPEDAS

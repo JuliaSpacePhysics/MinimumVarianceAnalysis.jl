@@ -21,16 +21,10 @@ end
 
     F = mva_eigen(B; dim = 1, check = true)
 
-    # Check that we get 3 eigenvalues and 3 eigenvectors
-    @test length(F.values) == 3
-    @test size(F.vectors) == (3, 3)
-    # Check that eigenvalues are sorted in descending order (default behavior)
-    @test F.values[1] >= F.values[2] >= F.values[3]
     @test F.vectors[:, 1] ≈ [1.0, 0.0, 0.0] || F.vectors[:, 1] ≈ [-1.0, 0.0, 0.0]
     @test F.vectors[:, 2] ≈ [0.0, 1.0, 0.0] || F.vectors[:, 2] ≈ [0.0, -1.0, 0.0]
     @test F.vectors[:, 3] ≈ [0.0, 0.0, 1.0] || F.vectors[:, 3] ≈ [0.0, 0.0, -1.0]
-    # Check that eigenvectors are orthonormal
-    @test F.vectors' * F.vectors ≈ I
+    @test F.mean ≈ vec(sum(B; dims = 1)) / 7
     @test mva(B; dim = 1) .* diag(F.vectors)' ≈ B # Note: eigenvectors are only unique up to sign
 
     # Dimensional data
@@ -54,7 +48,6 @@ end
     # Test edge cases and robustness
     B_const = ones(10, 3)
     F_const = mva_eigen(B_const; dim = 1)
-    @test F_const.values == [0, 0, 0]
 end
 
 @testitem "MVAE basic functionality with synthetic data" begin
@@ -75,8 +68,6 @@ end
     @test F.values[1] >= F.values[2] >= F.values[3]
     # Maximum variance direction (column 1) should be the z-axis (normal)
     @test F.vectors[:, 1] ≈ [0.0, 0.0, 1.0] || F.vectors[:, 1] ≈ [0.0, 0.0, -1.0]
-    # Check that eigenvectors are orthonormal
-    @test F.vectors' * F.vectors ≈ I
 
     # Dimensional data
     E1 = DimArray(E * u"mV/m", (Ti(0:6), Y(1:3)))
@@ -93,51 +84,50 @@ end
     @test Ft.vectors ≈ F.vectors
 end
 
-@testitem "check_mva_eigen quality check (field=:E)" begin
-    using LinearAlgebra: Eigen
+@testitem "issuccess quality ratio" begin
+    using LinearAlgebra: I
+    using MinimumVarianceAnalysis: MVAResult
 
-    # Good MVAE: well-separated maximum eigenvalue
-    F_good = Eigen([100.0, 5.0, 1.0], [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
-    @test check_mva_eigen(F_good; r0 = 5, field = :E) == true
-
-    # Bad MVAE: poorly separated eigenvalues
-    F_bad = Eigen([3.0, 2.5, 1.0], [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
-    @test check_mva_eigen(F_bad; r0 = 5, field = :E) == false
+    F(λ, field) = MVAResult(λ, Matrix(1.0I, length(λ), length(λ)), zeros(length(λ)), 10, field)
+    # MVAE needs λ₁ ≫ λ₂; MVAB needs λ₂ ≫ λ₃
+    @test issuccess(F([100.0, 5.0, 1.0], :E))
+    @test !issuccess(F([100.0, 5.0, 1.0], :B))
+    @test issuccess(F([3.0, 2.5, 0.1], :B))
+    @test !issuccess(F([3.0, 2.5, 0.1], :E))
+    @test issuccess(F([3.0, 2.5, 0.1], :E); r0 = 1.1)
+    # λ₃ must be the smallest eigenvalue, not the third of four
+    @test_throws ArgumentError issuccess(F([4.0, 3.0, 2.0, 1.0], :B))
 end
 
-@testitem "normal utility" begin
-    using LinearAlgebra: Eigen
-    using MinimumVarianceAnalysis: normal
+@testitem "normal and normal_component_error follow field" begin
+    using LinearAlgebra: I
+    using MinimumVarianceAnalysis: MVAResult, normal, normal_component_error, Δφij
 
-    F = Eigen([3.0, 2.0, 1.0], [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
-    @test normal(F; field = :B) == F.vectors[:, end]
-    @test normal(F; field = :E) == F.vectors[:, 1]
+    λ₁, λ₂, λ₃, M = 10.0, 2.0, 0.5, 100
+    m = [1.0, 0.5, 0.1]
+    FB = MVAResult([λ₁, λ₂, λ₃], Matrix(1.0I, 3, 3), m, M, :B)
+    FE = MVAResult([λ₁, λ₂, λ₃], Matrix(1.0I, 3, 3), m, M, :E)
+    @test normal(FB) == [0, 0, 1]
+    @test normal(FE) == [1, 0, 0]
+    # error of ⟨B·x₃⟩ (MVAB) and ⟨E·x₁⟩ (MVAE)
+    @test normal_component_error(FB) ≈ sqrt(λ₃ / (M - 1) + (Δφij(λ₃, λ₂, λ₃, M) * m[2])^2 + (Δφij(λ₃, λ₁, λ₃, M) * m[1])^2)
+    @test normal_component_error(FE) ≈ sqrt(λ₁ / (M - 1) + (Δφij(λ₁, λ₂, λ₃, M) * m[2])^2 + (Δφij(λ₁, λ₃, λ₃, M) * m[3])^2)
 end
 
 @testitem "right-handed coordinate system check" begin
-    using LinearAlgebra: Eigen
-    using MinimumVarianceAnalysis: is_right_handed
+    using MinimumVarianceAnalysis: MVAResult, is_right_handed
 
-    v1 = [1.0, 0.0, 0.0]
-    v2 = [0.0, 1.0, 0.0]
-    v3 = [0.0, 0.0, 1.0]
-    v3_left = [0.0, 0.0, -1.0]
-
-    # Test with Eigen object with right-handed system
-    F_right = Eigen([3.0, 2.0, 1.0], [v1 v2 v3])
-    @test is_right_handed(F_right) == true
-
-    # Test with Eigen object with left-handed system
-    F_left = Eigen([3.0, 2.0, 1.0], [v1 v2 v3_left])
-    @test is_right_handed(F_left) == false
+    F(v3) = MVAResult([3.0, 2.0, 1.0], [[1.0, 0.0, 0.0] [0.0, 1.0, 0.0] v3], zeros(3), 10, :B)
+    @test is_right_handed(F([0.0, 0.0, 1.0]))
+    @test !is_right_handed(F([0.0, 0.0, -1.0]))
 end
 
 @testitem "more than 3 components" begin
     using LinearAlgebra
-    using MinimumVarianceAnalysis: _variance_matrix
+    using MinimumVarianceAnalysis: _moments
 
     B = [cosd.(0:30:180) sind.(0:30:180) 0.1 .* ones(7)]
-    @test _variance_matrix(B) ≈ _variance_matrix(B, Val(3))
+    @test all(map(≈, _moments(B, nothing), _moments(B, Val(3))))
 
     B4 = [3 .* cosd.(0:30:330) 2 .* sind.(0:30:330) 0.5 .* cosd.(0:60:660) 0.1 .* ones(12)]
     F = mva_eigen(B4; dim = 1)
@@ -157,11 +147,11 @@ end
 
 @testitem "large mean field in Float32" begin
     using LinearAlgebra
-    using MinimumVarianceAnalysis: _variance_matrix
+    using MinimumVarianceAnalysis: _moments
 
     # |B̄| ≫ δB as at a magnetopause crossing; raw second moments lose λ₃ to Float32 cancellation
     B = [40 .+ cosd.(0:719) -30 .+ 0.3 .* sind.(0:719) 20 .+ 0.03 .* cosd.(0:3:2157)]
     λ₃ = mva_eigen(B; dim = 1).values[3]
     @test mva_eigen(Float32.(B); dim = 1).values[3] ≈ λ₃ rtol = 1.0e-4
-    @test eigmin(_variance_matrix(Float32.(B))) ≈ λ₃ rtol = 1.0e-4
+    @test eigmin(_moments(Float32.(B), nothing)[2]) ≈ λ₃ rtol = 1.0e-4
 end

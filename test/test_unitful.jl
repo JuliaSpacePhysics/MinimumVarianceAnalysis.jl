@@ -1,5 +1,6 @@
 @testitem "Unitful input infers field" begin
     using Unitful
+    using MinimumVarianceAnalysis: normal_component_error
 
     B = hcat(cosd.(0:30:180), sind.(0:30:180), 0.1 .* ones(7))
     F = mva_eigen(B .* u"T"; dim = 1)
@@ -7,9 +8,11 @@
     @test Unitful.ustrip.(F.values) ≈ mva_eigen(B; dim = 1).values
     @test all(Unitful.unit.(F.values) .== Ref(u"T^2"))
     @test F.vectors ≈ mva_eigen(B; dim = 1).vectors
+    @test Unitful.unit(normal_component_error(F)) == u"T"
 
     E = hcat(0.1 .* ones(7), 0.05 .* ones(7), cosd.(0:30:180))
     FE = mva_eigen(E .* u"mV/m"; dim = 1)
+    @test FE.field == :E
     @test FE.vectors[:, 1] ≈ [0.0, 0.0, 1.0] || FE.vectors[:, 1] ≈ [0.0, 0.0, -1.0]
 end
 
