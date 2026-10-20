@@ -11,16 +11,19 @@ $$
 ```julia
 using Pkg; Pkg.add("MinimumVarianceAnalysis")
 using MinimumVarianceAnalysis
-using MinimumVarianceAnalysis: normal
+using MinimumVarianceAnalysis: normal, normal_component_error
 
 Bl = cosd.(0:30:180)
 Bm = sind.(0:30:180)
 Bn = 0.1 .* ones(7)
 B = hcat(Bl, Bm, Bn)  # rows are samples
 
-F = mva_eigen(B; dim = 1)
-normal(F)          # minimum-variance direction for magnetic-field MVA
-mva(B; dim = 1)    # rotate samples into variance frame
+F = mva_eigen(B; dim = 1)    # MVAResult: values (λ₁ ≥ λ₂ ≥ λ₃), eigenvector columns `vectors`, mean, n, field
+normal(F)                    # minimum-variance direction for magnetic-field MVA
+issuccess(F)                 # normal well determined if |λ₂/λ₃| > r0 (default 5)
+normal_component_error(F)    # statistical error of ⟨B⟩·normal
+mva(B; dim = 1)              # rotate samples into variance frame
+mva(B, F; dim = 1)           # rotate any data (e.g. velocity) into F's frame
 ```
 
 For electric-field maximum variance analysis, pass `field = :E`:
@@ -28,7 +31,7 @@ For electric-field maximum variance analysis, pass `field = :E`:
 ```julia
 E = hcat(0.1 .* ones(7), 0.05 .* ones(7), cosd.(0:30:180))
 F = mva_eigen(E; dim = 1, field = :E)
-normal(F; field = :E)
+normal(F)    # maximum-variance direction; issuccess uses |λ₁/λ₂|
 ```
 
 Containers that carry their times (`DimArray`, SpaceDataModel's `DataVariable`) default to their time dimension.
@@ -62,12 +65,3 @@ See [SPEDAS](https://juliaspacephysics.github.io/SPEDAS.jl/dev/explanations/coor
 ## Notes
 
 - Anisotropic fluctuations have been shown to lead to larger errors in normal determinations.
-
-## Status
-
-[![DOI](https://zenodo.org/badge/1046063112.svg)](https://doi.org/10.5281/zenodo.18635364)
-[![version](https://juliahub.com/docs/General/MinimumVarianceAnalysis/stable/version.svg)](https://juliahub.com/ui/Packages/General/MinimumVarianceAnalysis)
-
-[![Build Status](https://github.com/JuliaSpacePhysics/MinimumVarianceAnalysis.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JuliaSpacePhysics/MinimumVarianceAnalysis.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/JuliaSpacePhysics/MinimumVarianceAnalysis.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaSpacePhysics/MinimumVarianceAnalysis.jl)
-[![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
