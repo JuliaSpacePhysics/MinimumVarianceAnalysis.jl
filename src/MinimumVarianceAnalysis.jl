@@ -47,17 +47,21 @@ function _mva_eigen(B; sort = (;))
     return sorteigen(eigen(M); sort...)
 end
 
-function _variance_matrix(B, ::Val{N}) where {N}
+function _variance_matrix(B, v::Val{N}) where {N}
     n = size(B, 1)
-    Bslices = eachcol(B)
-    B̄ = SVector{N}(sum(Bc) / n for Bc in Bslices)
-    return Symmetric(SMatrix{N, N}(dot(Bi, Bj) / n for Bi in Bslices, Bj in Bslices) - B̄ * B̄')
+    B̄ = SVector{N}(sum(Bc) / n for Bc in eachcol(B))
+    # Center before the products: the raw-moment form ⟨BBᵀ⟩ - B̄B̄ᵀ cancels catastrophically when |B̄| ≫ δB.
+    M = zero(SMatrix{N, N, eltype(B̄)})
+    @inbounds for k in axes(B, 1)
+        d = SVector(ntuple(i -> B[k, i], v)) - B̄
+        M += d * d'
+    end
+    return Symmetric(M / n)
 end
 
 function _variance_matrix(B)
-    n = size(B, 1)
-    B̄ = vec(sum(B; dims = 1)) / n
-    return Symmetric(B' * B / n - B̄ * B̄')
+    C = B .- sum(B; dims = 1) ./ size(B, 1)
+    return Symmetric(C' * C / size(B, 1))
 end
 
 """
