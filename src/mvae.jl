@@ -9,13 +9,7 @@ plasma velocity `v` and magnetic field `B`.
 This can be used as a proxy for the measured electric field when direct measurements are
 unavailable.
 """
-function convection_efield(v, B; dim = nothing)
-    dim = something(dim, 1)
-    v_in = dim == 1 ? v : v'
-    B_in = dim == 1 ? B : B'
-    E = stack(-cross3(view(v_in, i, :), view(B_in, i, :)) for i in axes(v_in, 1); dims = 1)
-    return dim == 1 ? E : E'
-end
+convection_efield(v, B; dim = nothing) = mapsamples((vi, Bi) -> -cross3(vi, Bi), v, B; dim)
 
 ################
 # Error Estimate

@@ -5,7 +5,7 @@
     # v = [0,1,0], B = [1,0,0] → E = -v×B = -(0,0,-1) = [0,0,1]
     v = [1.0 0.0 0.0; 0.0 1.0 0.0]
     B = [0.0 1.0 0.0; 1.0 0.0 0.0]
-    E = convection_efield(v, B)
+    E = convection_efield(v, B; dim = 1)
     @test E ≈ [0.0 0.0 -1.0; 0.0 0.0 1.0]
 
     # Test with dim=2

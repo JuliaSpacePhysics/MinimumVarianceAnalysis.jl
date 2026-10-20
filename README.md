@@ -16,27 +16,28 @@ using MinimumVarianceAnalysis: normal
 Bl = cosd.(0:30:180)
 Bm = sind.(0:30:180)
 Bn = 0.1 .* ones(7)
-B = hcat(Bl, Bm, Bn)
+B = hcat(Bl, Bm, Bn)  # rows are samples
 
-F = mva_eigen(B)
+F = mva_eigen(B; dim = 1)
 normal(F)          # minimum-variance direction for magnetic-field MVA
-mva(B)             # rotate samples into variance frame
+mva(B; dim = 1)    # rotate samples into variance frame
 ```
 
 For electric-field maximum variance analysis, pass `field = :E`:
 
 ```julia
 E = hcat(0.1 .* ones(7), 0.05 .* ones(7), cosd.(0:30:180))
-F = mva_eigen(E; field = :E)
+F = mva_eigen(E; dim = 1, field = :E)
 normal(F; field = :E)
 ```
 
-Unitful, DynamicQuantities, FlexUnits, and DimensionalData inputs are supported:
+Containers that carry their times (`DimArray`, SpaceDataModel's `DataVariable`) default to their time dimension.
+Unitful, DynamicQuantities and FlexUnits inputs are supported:
 
 ```julia
 using Unitful
 
-F = mva_eigen(B .* u"nT")
+F = mva_eigen(B .* u"nT"; dim = 1)
 F.values    # eigenvalues carry squared field units
 F.vectors   # eigenvectors are dimensionless directions
 ```

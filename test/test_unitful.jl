@@ -2,14 +2,14 @@
     using Unitful
 
     B = hcat(cosd.(0:30:180), sind.(0:30:180), 0.1 .* ones(7))
-    F = mva_eigen(B .* u"T")
+    F = mva_eigen(B .* u"T"; dim = 1)
 
-    @test Unitful.ustrip.(F.values) ≈ mva_eigen(B).values
+    @test Unitful.ustrip.(F.values) ≈ mva_eigen(B; dim = 1).values
     @test all(Unitful.unit.(F.values) .== Ref(u"T^2"))
-    @test F.vectors ≈ mva_eigen(B).vectors
+    @test F.vectors ≈ mva_eigen(B; dim = 1).vectors
 
     E = hcat(0.1 .* ones(7), 0.05 .* ones(7), cosd.(0:30:180))
-    FE = mva_eigen(E .* u"mV/m")
+    FE = mva_eigen(E .* u"mV/m"; dim = 1)
     @test FE.vectors[:, 1] ≈ [0.0, 0.0, 1.0] || FE.vectors[:, 1] ≈ [0.0, 0.0, -1.0]
 end
 
@@ -19,23 +19,23 @@ end
     import FlexUnits.UnitRegistry
 
     B = hcat(cosd.(0:30:180), sind.(0:30:180), 0.1 .* ones(7))
-    F = mva_eigen(B)
+    F = mva_eigen(B; dim = 1)
 
     dq_B = B .* DynamicQuantities.uparse("T")
-    dq_F = mva_eigen(dq_B)
+    dq_F = mva_eigen(dq_B; dim = 1)
     @test DynamicQuantities.ustrip.(dq_F.values) ≈ F.values
     @test all(DynamicQuantities.dimension.(dq_F.values) .== Ref(DynamicQuantities.dimension(DynamicQuantities.uparse("T")^2)))
     @test dq_F.vectors ≈ F.vectors
 
     flex_B = B .* UnitRegistry.uparse("T")
-    flex_F = mva_eigen(flex_B)
+    flex_F = mva_eigen(flex_B; dim = 1)
     @test FlexUnits.ustrip.(flex_F.values) ≈ F.values
     @test all(FlexUnits.dimension.(flex_F.values) .== Ref(FlexUnits.dimension(UnitRegistry.uparse("T")^2)))
     @test flex_F.vectors ≈ F.vectors
 
     E = hcat(0.1 .* ones(7), 0.05 .* ones(7), cosd.(0:30:180))
-    dq_E = mva_eigen(E .* DynamicQuantities.uparse("V/m"))
-    flex_E = mva_eigen(E .* UnitRegistry.uparse("V/m"))
+    dq_E = mva_eigen(E .* DynamicQuantities.uparse("V/m"); dim = 1)
+    flex_E = mva_eigen(E .* UnitRegistry.uparse("V/m"); dim = 1)
     @test dq_E.vectors[:, 1] ≈ [0.0, 0.0, 1.0] || dq_E.vectors[:, 1] ≈ [0.0, 0.0, -1.0]
     @test flex_E.vectors[:, 1] ≈ [0.0, 0.0, 1.0] || flex_E.vectors[:, 1] ≈ [0.0, 0.0, -1.0]
 end
