@@ -10,6 +10,7 @@ module MinimumVarianceAnalysis
 
 using LinearAlgebra
 using StaticArrays
+using TimeseriesUtilities: resolve_dim, unwrap, rebuild, mapsamples
 export mva, mva_eigen, check_mva_eigen
 export convection_efield
 
@@ -19,14 +20,20 @@ include("utils.jl")
 
 """
     mva(V, F=V; dim=nothing, kwargs...)
+    mva(V, F::Eigen; dim=nothing)
 
-Transform a timeseries `V` into the LMN coordinate system based on the minimum/maximum variance analysis of reference field `F` along the `dim` dimension (time).
-
-See also: [`mva_eigen`](@ref), [`transform`](@ref)
+Transform time series `V` into the variance frame (LMN) of reference field `F`, or of an [`mva_eigen`](@ref) result `F`.
+`kwargs` go to [`mva_eigen`](@ref).
 """
-function mva(V, F = V; dim = nothing, kwargs...)
-    E = mva_eigen(F; dim, kwargs...)
-    return transform(V, E; dim)
+mva(V, F = V; dim = nothing, kwargs...) = mva(V, mva_eigen(F; dim, kwargs...); dim)
+
+function mva(V, F::Eigen; dim = nothing)
+    d = resolve_dim(V, dim)
+    data = unwrap(V)
+    out = d == 1 ? data * F.vectors : F.vectors' * data
+    # components now lie along the eigenvectors, so the input's component labels no longer apply
+    c = 3 - d
+    return rebuild(V, out, Base.setindex((Val(1), Val(2)), nothing => axes(out, c), c))
 end
 
 @inline function sorteigen(F; sortby = abs, rev = true)
@@ -34,12 +41,23 @@ end
     return Eigen(F.values[order], F.vectors[:, order])
 end
 
-function _mva_eigen(B, ::Val{N}; sort = (;)) where {N}
+# Static path for the 3-component case only: a literal size leaves `M` a small Union the compiler splits, so no dynamic dispatch.
+function _mva_eigen(B; sort = (;))
+    M = size(B, 2) == 3 ? _variance_matrix(B, Val(3)) : _variance_matrix(B)
+    return sorteigen(eigen(M); sort...)
+end
+
+function _variance_matrix(B, ::Val{N}) where {N}
     n = size(B, 1)
     Bslices = eachcol(B)
     B̄ = SVector{N}(sum(Bc) / n for Bc in Bslices)
-    M = SMatrix{N, N}(dot(Bi, Bj) / n for Bi in Bslices, Bj in Bslices) - B̄ * B̄'
-    return sorteigen(eigen(M); sort...)
+    return Symmetric(SMatrix{N, N}(dot(Bi, Bj) / n for Bi in Bslices, Bj in Bslices) - B̄ * B̄')
+end
+
+function _variance_matrix(B)
+    n = size(B, 1)
+    B̄ = vec(sum(B; dims = 1)) / n
+    return Symmetric(B' * B / n - B̄ * B̄')
 end
 
 """
@@ -47,7 +65,7 @@ end
 
 Perform minimum variance analysis of the magnetic field `B` or maximum variance analysis of the electric field `E` when `field=:E`.
 
-`x` varies along the `dim` dimension.
+Samples lie along `dim`, by default the time dimension of a container (`DimArray`, `DataVariable`, …); plain matrices must pass `dim`.
 
 Return `Eigen` factorization object `F` which contains the eigenvalues in `F.values` and the eigenvectors in the columns of the matrix `F.vectors`. The `k`th eigenvector can be obtained from the slice `F.vectors[:, k]`.
 
@@ -58,10 +76,8 @@ Set `check=true` to check the reliability of the result.
 For a one-dimensional current layer, the tangential electric field components are approximately constant across the boundary, while the normal component exhibits the largest variation. Therefore, the eigenvector corresponding to the **maximum eigenvalue** ``λ_1`` (first column of `F.vectors`) gives an estimate of the boundary normal direction.
 """
 function mva_eigen(B; dim = nothing, sort = (;), check = false, field = :B)
-    dim = _dimnum(B, dim)
-    in = dim == 1 ? B : B'
-    N = size(in, 2)
-    F = _mva_eigen(in, Val(N); sort)
+    data = unwrap(B)
+    F = _mva_eigen(resolve_dim(B, dim) == 1 ? data : transpose(data); sort)
     check && check_mva_eigen(F; field)
     return F
 end

@@ -19,7 +19,7 @@ end
     Bn = 0.1 .* ones(7)
     B = hcat(Bl, Bm, Bn)
 
-    F = mva_eigen(B; check = true)
+    F = mva_eigen(B; dim = 1, check = true)
 
     # Check that we get 3 eigenvalues and 3 eigenvectors
     @test length(F.values) == 3
@@ -31,7 +31,7 @@ end
     @test F.vectors[:, 3] ≈ [0.0, 0.0, 1.0] || F.vectors[:, 3] ≈ [0.0, 0.0, -1.0]
     # Check that eigenvectors are orthonormal
     @test F.vectors' * F.vectors ≈ I
-    @test mva(B) .* diag(F.vectors)' ≈ B # Note: eigenvectors are only unique up to sign
+    @test mva(B; dim = 1) .* diag(F.vectors)' ≈ B # Note: eigenvectors are only unique up to sign
 
     # Dimensional data
     B1 = DimArray(B * u"nT", (Ti(0:6), Y(1:3)))
@@ -45,10 +45,15 @@ end
     B1_rot = mva(B1)
     B2_rot = mva(B2)
     @test B1_rot ≈ B2_rot'
+    @test dims(B1_rot, Ti) == dims(B1, Ti)
+    @test !hasdim(B1_rot, Y) # components lie along the eigenvectors now
+    @test mva(B2, F1) ≈ B2_rot
+
+    @test_throws ArgumentError mva_eigen(B)
 
     # Test edge cases and robustness
     B_const = ones(10, 3)
-    F_const = mva_eigen(B_const)
+    F_const = mva_eigen(B_const; dim = 1)
     @test F_const.values == [0, 0, 0]
 end
 
@@ -64,7 +69,7 @@ end
     Et2 = 0.05 .* ones(7)
     E = hcat(Et1, Et2, En)
 
-    F = mva_eigen(E; check = true, field = :E)
+    F = mva_eigen(E; dim = 1, check = true, field = :E)
 
     # Check that eigenvalues are sorted in descending order (default behavior)
     @test F.values[1] >= F.values[2] >= F.values[3]
@@ -125,4 +130,27 @@ end
     # Test with Eigen object with left-handed system
     F_left = Eigen([3.0, 2.0, 1.0], [v1 v2 v3_left])
     @test is_right_handed(F_left) == false
+end
+
+@testitem "more than 3 components" begin
+    using LinearAlgebra
+    using MinimumVarianceAnalysis: _variance_matrix
+
+    B = [cosd.(0:30:180) sind.(0:30:180) 0.1 .* ones(7)]
+    @test _variance_matrix(B) ≈ _variance_matrix(B, Val(3))
+
+    B4 = [3 .* cosd.(0:30:330) 2 .* sind.(0:30:330) 0.5 .* cosd.(0:60:660) 0.1 .* ones(12)]
+    F = mva_eigen(B4; dim = 1)
+    @test abs.(F.vectors) ≈ I
+end
+
+@testitem "containers resolve their time dimension" begin
+    using TimeseriesUtilities: Timed, unwrap
+
+    B = [cosd.(0:30:180) sind.(0:30:180) 0.1 .* ones(7)]
+    F = mva_eigen(B; dim = 1)
+    Ft = mva_eigen(Timed(collect(B'), 0:6; dim = 2))
+    @test Ft.values ≈ F.values
+    @test Ft.vectors ≈ F.vectors
+    @test unwrap(mva(Timed(collect(B'), 0:6; dim = 2))) ≈ mva(B; dim = 1)'
 end
