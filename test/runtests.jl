@@ -154,3 +154,14 @@ end
     @test Ft.vectors ≈ F.vectors
     @test unwrap(mva(Timed(collect(B'), 0:6; dim = 2))) ≈ mva(B; dim = 1)'
 end
+
+@testitem "large mean field in Float32" begin
+    using LinearAlgebra
+    using MinimumVarianceAnalysis: _variance_matrix
+
+    # |B̄| ≫ δB as at a magnetopause crossing; raw second moments lose λ₃ to Float32 cancellation
+    B = [40 .+ cosd.(0:719) -30 .+ 0.3 .* sind.(0:719) 20 .+ 0.03 .* cosd.(0:3:2157)]
+    λ₃ = mva_eigen(B; dim = 1).values[3]
+    @test mva_eigen(Float32.(B); dim = 1).values[3] ≈ λ₃ rtol = 1.0e-4
+    @test eigmin(_variance_matrix(Float32.(B))) ≈ λ₃ rtol = 1.0e-4
+end
