@@ -97,15 +97,11 @@ function mva_eigen(B; dim = nothing, check = false, field = :B)
     return F
 end
 
-function _field(dimension, electric_dimension, magnetic_dimension)
-    dimension == electric_dimension && return :E
-    dimension == magnetic_dimension && return :B
-    return nothing
-end
-
-function _quantity_mva_eigen(B, scale, raw_values, infer_field_dimension; field = nothing, kwargs...)
-    field = @something field infer_field_dimension(scale) :B
-    F = mva_eigen(raw_values(B); field, kwargs...)
+# Unit extensions pass `B` stripped to `raw`, in units of `oneunit(first(B))`, so the numerics run on plain floats.
+function _quantity_mva_eigen(B, raw, is_electric; field = nothing, kwargs...)
+    scale = oneunit(first(B))
+    field = @something field (is_electric ? :E : :B)
+    F = mva_eigen(raw; field, kwargs...)
     return MVAResult(F.values .* scale^2, F.vectors, F.mean .* scale, F.n, F.field)
 end
 

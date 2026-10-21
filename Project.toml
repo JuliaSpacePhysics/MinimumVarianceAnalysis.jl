@@ -24,7 +24,7 @@ MVAUnitfulExt = "Unitful"
 
 [compat]
 DynamicQuantities = "1"
-FlexUnits = "0.5"
+FlexUnits = "0.5, 0.6"
 LinearAlgebra = "1"
 PrecompileTools = "1"
 StaticArrays = "1"
