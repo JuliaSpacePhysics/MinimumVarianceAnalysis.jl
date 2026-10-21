@@ -7,4 +7,4 @@ PySPEDAS = "668d2cef-03a7-4c36-a521-7d1c6ddc8846"
 [compat]
 Chairmarks = "1"
 Documenter = "1"
-PySPEDAS = "0.2"
+PySPEDAS = "0.3.1"
