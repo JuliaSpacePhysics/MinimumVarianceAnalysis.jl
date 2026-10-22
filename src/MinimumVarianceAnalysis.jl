@@ -43,7 +43,7 @@ function mva(V, F::MVAResult; dim = nothing)
     out = d == 1 ? data * F.vectors : F.vectors' * data
     # components now lie along the eigenvectors, so the input's component labels no longer apply
     c = 3 - d
-    return rebuild(V, out, Base.setindex((Val(1), Val(2)), nothing => axes(out, c), c))
+    return rebuild(V, out, Base.setindex((Val(1), Val(2)), nothing => nothing, c))
 end
 
 # Static path for the 3-component case only
