@@ -14,7 +14,6 @@ Modules = [MinimumVarianceAnalysis]
 Error estimates for MVA:
 
 ```@docs; canonical=false
-MinimumVarianceAnalysis.Δφij
 MinimumVarianceAnalysis.normal_component_error
 ```
 

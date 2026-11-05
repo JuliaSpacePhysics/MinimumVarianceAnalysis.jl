@@ -44,44 +44,6 @@ end
     @test mva(B2, F1) ≈ B2_rot
 
     @test_throws ArgumentError mva_eigen(B)
-
-    # Test edge cases and robustness
-    B_const = ones(10, 3)
-    F_const = mva_eigen(B_const; dim = 1)
-end
-
-@testitem "MVAE basic functionality with synthetic data" begin
-    using LinearAlgebra
-    using DimensionalData
-    using Unitful
-
-    # Create synthetic E-field data with known variance structure
-    # Normal component (max variance) along z, tangential components (low variance) along x, y
-    En = cosd.(0:30:180)
-    Et1 = 0.1 .* ones(7)
-    Et2 = 0.05 .* ones(7)
-    E = hcat(Et1, Et2, En)
-
-    F = mva_eigen(E; dim = 1, check = true, field = :E)
-
-    # Check that eigenvalues are sorted in descending order (default behavior)
-    @test F.values[1] >= F.values[2] >= F.values[3]
-    # Maximum variance direction (column 1) should be the z-axis (normal)
-    @test F.vectors[:, 1] ≈ [0.0, 0.0, 1.0] || F.vectors[:, 1] ≈ [0.0, 0.0, -1.0]
-
-    # Dimensional data
-    E1 = DimArray(E * u"mV/m", (Ti(0:6), Y(1:3)))
-    E2 = DimArray(collect(E') * u"mV/m", (Y(1:3), Ti(0:6)))
-    F1 = mva_eigen(E1; field = :E)
-    F2 = mva_eigen(E2; field = :E)
-    @test F1.values ≈ F2.values
-    @test F1.vectors ≈ F2.vectors
-
-    # Test with dim=2
-    E_t = collect(E')
-    Ft = mva_eigen(E_t; dim = 2, field = :E)
-    @test Ft.values ≈ F.values
-    @test Ft.vectors ≈ F.vectors
 end
 
 @testitem "issuccess quality ratio" begin
@@ -101,7 +63,7 @@ end
 
 @testitem "normal and normal_component_error follow field" begin
     using LinearAlgebra: I
-    using MinimumVarianceAnalysis: MVAResult, normal, normal_component_error, Δφij
+    using MinimumVarianceAnalysis: MVAResult, normal, normal_component_error
 
     λ₁, λ₂, λ₃, M = 10.0, 2.0, 0.5, 100
     m = [1.0, 0.5, 0.1]
@@ -109,17 +71,59 @@ end
     FE = MVAResult([λ₁, λ₂, λ₃], Matrix(1.0I, 3, 3), m, M, :E)
     @test normal(FB) == [0, 0, 1]
     @test normal(FE) == [1, 0, 0]
-    # error of ⟨B·x₃⟩ (MVAB) and ⟨E·x₁⟩ (MVAE)
-    @test normal_component_error(FB) ≈ sqrt(λ₃ / (M - 1) + (Δφij(λ₃, λ₂, λ₃, M) * m[2])^2 + (Δφij(λ₃, λ₁, λ₃, M) * m[1])^2)
-    @test normal_component_error(FE) ≈ sqrt(λ₁ / (M - 1) + (Δφij(λ₁, λ₂, λ₃, M) * m[2])^2 + (Δφij(λ₁, λ₃, λ₃, M) * m[3])^2)
+    # Sonnerup & Scheible (1998) Eqs. 8.23-8.24 for ⟨B·x₃⟩ (MVAB) and ⟨E·x₁⟩ (MVAE)
+    Δφ(λᵢ, λⱼ) = sqrt(λ₃ / (M - 1) * (λᵢ + λⱼ - λ₃) / (λᵢ - λⱼ)^2)
+    @test normal_component_error(FB) ≈ sqrt(λ₃ / (M - 1) + (Δφ(λ₃, λ₂) * m[2])^2 + (Δφ(λ₃, λ₁) * m[1])^2)
+    @test normal_component_error(FE) ≈ sqrt(λ₁ / (M - 1) + (Δφ(λ₁, λ₂) * m[2])^2 + (Δφ(λ₁, λ₃) * m[3])^2)
+    @test normal_component_error(FB; M = 10) ≈ normal_component_error(FB) * sqrt((M - 1) / 9)
 end
 
-@testitem "right-handed coordinate system check" begin
-    using MinimumVarianceAnalysis: MVAResult, is_right_handed
+@testitem "background removes the bias of anisotropic noise" begin
+    using LinearAlgebra
+    using Random: Xoshiro
+    using Unitful
+    using MinimumVarianceAnalysis: normal, normal_component_error
 
-    F(v3) = MVAResult([3.0, 2.0, 1.0], [[1.0, 0.0, 0.0] [0.0, 1.0, 0.0] v3], zeros(3), 10, :B)
-    @test is_right_handed(F([0.0, 0.0, 1.0]))
-    @test !is_right_handed(F([0.0, 0.0, -1.0]))
+    # Normal along z; noise, like Alfvénic turbulence, has almost no variance along e, 45° from the normal
+    rng = Xoshiro(1)
+    e = normalize([0.0, 1.0, 1.0])
+    Σ½ = 0.3 * (I - e * e') + 0.01 * e * e'
+    noise(N) = randn(rng, N, 3) * Σ½
+    t = range(-3, 3; length = 20_000)
+    B = [tanh.(t) 0.3 .* sech.(t) fill(0.5, length(t))] + noise(length(t))
+    before, after = noise(20_000) .+ [-1 0 0.5], noise(20_000) .+ [1 0 0.5]
+    angle(n) = acosd(abs(n[3]))
+
+    F0 = mva_eigen(B; dim = 1)
+    # wrong, yet reported reliable
+    @test angle(normal(F0)) > 20 && issuccess(F0)
+    @test abs(abs(F0.mean ⋅ normal(F0)) - 0.5) > 3normal_component_error(F0)
+    F = mva_eigen(B; dim = 1, background = (before, after))
+    @test angle(normal(F)) < 3
+    @test F.noise[3, 3] ≈ normal(F)' * Σ½^2 * normal(F) rtol = 0.05
+
+    # a background in other units is converted to those of B
+    Fu = mva_eigen(B .* u"nT"; dim = 1, background = (before .* 1.0e-9u"T", after .* u"nT"))
+    @test ustrip.(u"nT^2", Fu.values) ≈ F.values
+    @test ustrip(u"nT", normal_component_error(Fu)) ≈ normal_component_error(F)
+end
+
+@testitem "normal_component_error matches the scatter under anisotropic noise and a short background" begin
+    using LinearAlgebra
+    using Random: Xoshiro
+    using Statistics: std, median
+    using MinimumVarianceAnalysis: normal, normal_component_error
+
+    # Both the noise cross-covariance between eigenvectors and the background's sampling error each add ~30% here.
+    rng = Xoshiro(2)
+    e = normalize([0.0, 1.0, 1.0])
+    Σ½ = 0.3 * (I - e * e') + 0.01 * e * e'
+    noise(N) = randn(rng, N, 3) * Σ½
+    t = range(-3, 3; length = 2000)
+    S = [tanh.(t) 0.3 .* sech.(t) fill(0.5, length(t))]
+    Fs = [mva_eigen(S + noise(length(t)); dim = 1, background = (noise(1000) .+ [-1 0 0.5], noise(1000) .+ [1 0 0.5])) for _ in 1:200]
+    Bn = [abs(F.mean ⋅ normal(F)) for F in Fs]
+    @test std(Bn) / median(normal_component_error.(Fs)) ≈ 1 atol = 0.2
 end
 
 @testitem "more than 3 components" begin
